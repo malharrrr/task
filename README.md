@@ -97,14 +97,3 @@ From the UI, you can:
       "image_base64": "iVBORw0KGgoAAAANSUhEUgAA..."
     }
     ```
-
-## 🗂️ Project Structure
-
-├── main.py                # FastAPI application & AI model logic
-├── requirements.txt       # Python dependencies (includes kornia, timm)
-├── Dockerfile             # PyTorch 2.4.0 / CUDA environment
-├── docker-compose.yml     # Multi-container orchestration
-├── .env                   # Environment variables (Gated model token)
-├── .gitignore             # Git exclusion rules
-└── static/
-└── index.html         # Frontend user interface
