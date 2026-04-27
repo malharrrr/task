@@ -75,7 +75,7 @@ async def get_image_description(image_bytes: bytes) -> str:
         "stream": False
     }
     async with httpx.AsyncClient() as client:
-        response = await client.post("http://ollama:11434/api/generate", json=payload, timeout=120.0)
+        response = await client.post("http://ollama:11434/api/generate", json=payload, timeout=600.0)
         if response.status_code == 200:
             return response.json().get("response", "").strip()
         raise HTTPException(status_code=500, detail="Ollama vision model request failed")
