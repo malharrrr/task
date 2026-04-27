@@ -10,6 +10,24 @@ from torchvision import transforms
 from transformers import AutoModelForImageSegmentation
 import rembg
 import httpx
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    RMBGModel.get_instance()
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class RMBGModel:
     _instance = None
@@ -67,13 +85,6 @@ async def remove_bg_rembg(image_bytes: bytes) -> str:
     output_bytes = await loop.run_in_executor(None, rembg.remove, image_bytes)
     return base64.b64encode(output_bytes).decode('utf-8')
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    RMBGModel.get_instance()
-    yield
-
-app = FastAPI(lifespan=lifespan)
-
 @app.post("/remove-bg")
 async def remove_bg_endpoint(file: UploadFile = File(...)):
     try:
@@ -99,3 +110,9 @@ async def process_endpoint(file: UploadFile = File(...)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+async def serve_frontend():
+    return FileResponse("static/index.html")

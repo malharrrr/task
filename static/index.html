@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Processor</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --background: #F3F4F6;
+            --surface: #FFFFFF;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--background);
+            color: #1F2937;
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+            margin: 0;
+        }
+        .container {
+            background-color: var(--surface);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .upload-area {
+            display: block;
+            border: 2px dashed #D1D5DB;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .upload-area:hover { border-color: var(--primary); }
+        .upload-area input { display: none; }
+        
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: #4338CA; }
+        button:disabled { background-color: #9CA3AF; cursor: not-allowed; }
+
+        .result-area { display: none; margin-top: 2rem; }
+        .image-preview {
+            max-width: 100%;
+            border-radius: 8px;
+            background: repeating-conic-gradient(#f0f0f0 0% 25%, transparent 0% 50%) 50% / 20px 20px;
+        }
+        .description-box {
+            background: #F9FAFB;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-style: italic;
+            border-left: 4px solid var(--primary);
+            display: none;
+        }
+        .loader { display: none; margin: 1rem auto; font-weight: bold; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>AI Image Processor</h2>
+        <p>Upload an image to remove its background or generate a description.</p>
+
+        <label class="upload-area" id="drop-zone">
+            <span id="file-name">Click to browse or drag an image here</span>
+            <input type="file" id="file-input" accept="image/*">
+        </label>
+
+        <div class="buttons">
+            <button id="btn-bg" onclick="processImage('/remove-bg')">Remove Background</button>
+            <button id="btn-process" onclick="processImage('/process')">Describe & Remove BG</button>
+        </div>
+
+        <div id="loading" class="loader">Processing your image with AI... This may take a moment.</div>
+
+        <div id="result-area" class="result-area">
+            <h3>Result:</h3>
+            <img id="result-image" class="image-preview" src="" alt="Processed Image">
+            <div id="description-box" class="description-box"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const fileNameDisplay = document.getElementById('file-name');
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileNameDisplay.textContent = e.target.files[0].name;
+            }
+        });
+
+        async function processImage(endpoint) {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Please select an image first.");
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result-area').style.display = 'none';
+            document.getElementById('description-box').style.display = 'none';
+            document.getElementById('btn-bg').disabled = true;
+            document.getElementById('btn-process').disabled = true;
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Processing failed.");
+
+                const resultImg = document.getElementById('result-image');
+                
+                if (endpoint === '/remove-bg') {
+                    // endpoint 1: returns raw image bytes 
+                    const blob = await response.blob();
+                    resultImg.src = URL.createObjectURL(blob);
+                } 
+                else if (endpoint === '/process') {
+                    // endpoint 2: returns JSON with base64 image and text description
+                    const data = await response.json();
+                    resultImg.src = "data:image/png;base64," + data.image_base64;
+                    
+                    const descBox = document.getElementById('description-box');
+                    descBox.textContent = `AI Description: "${data.description}"`;
+                    descBox.style.display = 'block';
+                }
+
+                document.getElementById('result-area').style.display = 'block';
+            } catch (error) {
+                alert("An error occurred: " + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('btn-bg').disabled = false;
+                document.getElementById('btn-process').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

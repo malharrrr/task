@@ -8,3 +8,5 @@ transformers
 rembg
 httpx
 onnxruntime
+kornia
+timm

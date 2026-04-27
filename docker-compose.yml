@@ -5,6 +5,7 @@ services:
     build: .
     ports:
       - "8000:8000"
+    # Uncomment the deploy block below if you are running on an NVIDIA GPU host
     # deploy:
     #   resources:
     #     reservations:
@@ -14,8 +15,10 @@ services:
     #           capabilities: [gpu]
     environment:
       - OLLAMA_HOST=http://ollama:11434
+      - HF_TOKEN=${HF_TOKEN}
     depends_on:
       - ollama
+      - ollama-init
 
   ollama:
     image: ollama/ollama
@@ -23,6 +26,18 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+
+  ollama-init:
+    image: curlimages/curl:latest
+    depends_on:
+      - ollama
+    command: >
+      sh -c "
+      echo 'Waiting for Ollama server to be ready...' &&
+      until curl -s http://ollama:11434/api/tags > /dev/null; do sleep 2; done &&
+      echo 'Ollama is up! Pulling moondream model...' &&
+      curl -s -X POST http://ollama:11434/api/pull -d '{\"name\": \"moondream\"}' &&
+      echo '/n Model pulled successfully!'"
 
 volumes:
   ollama_data:
